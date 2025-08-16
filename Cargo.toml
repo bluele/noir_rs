@@ -32,3 +32,5 @@ default = []
 barretenberg = ["bb_rs"]
 android-compat = ["openssl"]
 
+[patch."https://github.com/zkpassport/aztec-packages.git"]
+bb_rs = { git = "https://github.com/bluele/aztec-packages.git", branch = "v1.0.0-nightly.20250723-p2" }

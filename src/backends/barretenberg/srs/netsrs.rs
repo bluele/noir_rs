@@ -1,10 +1,10 @@
+use super::{Srs, G2};
 use reqwest::blocking::Client;
 use reqwest::header::{HeaderMap, RANGE};
 use std::fs;
 use std::ops::Deref;
 use std::path::PathBuf;
-
-use super::{Srs, G2};
+use std::time::Duration;
 
 pub struct NetSrs(pub Srs);
 
@@ -73,14 +73,11 @@ impl NetSrs {
         println!("Downloading g1.dat from https://crs.aztec.network/g1.dat");
         println!("Headers: {:?}", headers);
 
-        let response = Client::new()
-            .get("https://crs.aztec.network/g1.dat")
-            .timeout(std::time::Duration::from_secs(100000))
-            .headers(headers)
-            .send()
-            .unwrap();
-
-        let data = response.bytes().unwrap().to_vec();
+        let data = http_get_bytes_on_isolated_thread(
+            "https://crs.aztec.network/g1.dat",
+            Some(headers),
+            Duration::from_secs(100_000),
+        );
 
         // Save to cache
         match fs::write(&cache_file_path, &data) {
@@ -99,11 +96,31 @@ impl NetSrs {
     }
 
     fn download_g2_data() -> Vec<u8> {
-        let response = Client::new()
-            .get("https://crs.aztec.network/g2.dat")
-            .send()
-            .unwrap();
-
-        response.bytes().unwrap().to_vec()
+        http_get_bytes_on_isolated_thread(
+            "https://crs.aztec.network/g2.dat",
+            None,
+            Duration::from_secs(100_000),
+        )
     }
+}
+
+fn http_get_bytes_on_isolated_thread(
+    url: &str,
+    headers: Option<HeaderMap>,
+    timeout: Duration,
+) -> Vec<u8> {
+    let url = url.to_string();
+    // this is needed to be able to use the client from within an async runtime
+    // see https://github.com/seanmonstar/reqwest/pull/1159
+    std::thread::spawn(move || {
+        let client = Client::new();
+        let mut rb = client.get(url).timeout(timeout);
+        if let Some(h) = headers {
+            rb = rb.headers(h);
+        }
+        let resp = rb.send().expect("http request failed");
+        resp.bytes().expect("failed to read response body").to_vec()
+    })
+    .join()
+    .expect("http worker thread panicked")
 }

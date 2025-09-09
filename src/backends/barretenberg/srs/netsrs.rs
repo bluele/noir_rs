@@ -1,5 +1,5 @@
-use reqwest::Client;
 use reqwest::header::{HeaderMap, RANGE};
+use reqwest::Client;
 use std::fs;
 use std::ops::Deref;
 use std::path::PathBuf;

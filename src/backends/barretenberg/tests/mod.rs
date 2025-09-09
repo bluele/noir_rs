@@ -1,18 +1,30 @@
-use tracing::info;
-use bb_rs::barretenberg_api::{acir::{get_circuit_sizes, acir_get_slow_low_memory}, srs::init_srs};
-use crate::backends::barretenberg::{srs::{setup_srs_from_bytecode, setup_srs, netsrs::NetSrs}, verify::{verify_ultra_honk, verify_ultra_honk_keccak, get_ultra_honk_verification_key, get_ultra_honk_keccak_verification_key}, prove::{prove_ultra_honk, prove_ultra_honk_keccak}, utils::compute_subgroup_size};
-use acir::{FieldElement, native_types::{Witness, WitnessMap}};
-use crate::{witness, circuit};
+use crate::backends::barretenberg::{
+    prove::{prove_ultra_honk, prove_ultra_honk_keccak},
+    srs::{netsrs::NetSrs, setup_srs, setup_srs_from_bytecode},
+    utils::compute_subgroup_size,
+    verify::{
+        get_ultra_honk_keccak_verification_key, get_ultra_honk_verification_key, verify_ultra_honk,
+        verify_ultra_honk_keccak,
+    },
+};
+use crate::{circuit, witness};
+use acir::{
+    native_types::{Witness, WitnessMap},
+    FieldElement,
+};
+use bb_rs::barretenberg_api::{
+    acir::{acir_get_slow_low_memory, get_circuit_sizes},
+    srs::init_srs,
+};
 use serde_json;
+use tracing::info;
 
 const BYTECODE: &str = "H4sIAAAAAAAA/62QQQqAMAwErfigpEna5OZXLLb/f4KKLZbiTQdCQg7Dsm66mc9x00O717rhG9ico5cgMOfoMxJu4C2pAEsKioqisnslysoaLVkEQ6aMRYxKFc//ZYQr29L10XfhXv4jB52E+OpMAQAA";
 
 #[test]
 fn test_acir_get_circuit_size() {
     let (_, constraint_system_buf) = circuit::decode_circuit(BYTECODE).unwrap();
-    let circuit_sizes = unsafe { 
-        get_circuit_sizes(&constraint_system_buf, false) 
-    }; 
+    let circuit_sizes = unsafe { get_circuit_sizes(&constraint_system_buf, false) };
     assert_eq!(circuit_sizes.total, 3560);
     assert_eq!(circuit_sizes.subgroup, 4096);
 }
@@ -29,7 +41,8 @@ fn test_prove_and_verify_ultra_honk() {
     // Get the witness map from the vector of field elements
     // The vector items can be either a FieldElement, an unsigned integer
     // For hex or decimal strings, use from_vec_str_to_witness_map
-    let initial_witness = witness::from_vec_to_witness_map(vec![5 as u128, 6 as u128, 30 as u128]).unwrap();
+    let initial_witness =
+        witness::from_vec_to_witness_map(vec![5 as u128, 6 as u128, 30 as u128]).unwrap();
 
     let start = std::time::Instant::now();
     let vk = get_ultra_honk_verification_key(BYTECODE, false).unwrap();
@@ -47,13 +60,13 @@ fn test_prove_and_verify_ultra_honk() {
 fn test_ultra_honk_keccak() {
     let _ = tracing_subscriber::fmt::try_init();
 
-    // Read the JSON manifest of the circuit 
+    // Read the JSON manifest of the circuit
     let keccak_circuit_txt = std::fs::read_to_string("circuits/target/keccak.json").unwrap();
     // Parse the JSON manifest into a dictionary
     let keccak_circuit: serde_json::Value = serde_json::from_str(&keccak_circuit_txt).unwrap();
     // Get the bytecode from the dictionary
     let keccak_circuit_bytecode = keccak_circuit["bytecode"].as_str().unwrap();
-    
+
     // Setup SRS
     setup_srs_from_bytecode(keccak_circuit_bytecode, None, false).unwrap();
 
@@ -62,13 +75,23 @@ fn test_ultra_honk_keccak() {
     // Get the witness map from the vector of field elements
     // The vector items can be either a FieldElement, an unsigned integer
     // For hex or decimal strings, use from_vec_str_to_witness_map
-    let initial_witness = witness::from_vec_to_witness_map(vec![2 as u128, 5 as u128, 10 as u128, 15 as u128, 20 as u128]).unwrap();
+    let initial_witness = witness::from_vec_to_witness_map(vec![
+        2 as u128, 5 as u128, 10 as u128, 15 as u128, 20 as u128,
+    ])
+    .unwrap();
 
     let start = std::time::Instant::now();
     let vk = get_ultra_honk_keccak_verification_key(keccak_circuit_bytecode, false, false).unwrap();
     assert_eq!(acir_get_slow_low_memory(), false);
-    
-    let proof = prove_ultra_honk_keccak(keccak_circuit_bytecode, initial_witness, vk.clone(), false, false).unwrap();
+
+    let proof = prove_ultra_honk_keccak(
+        keccak_circuit_bytecode,
+        initial_witness,
+        vk.clone(),
+        false,
+        false,
+    )
+    .unwrap();
     info!("ultra honk proof generation time: {:?}", start.elapsed());
     assert_eq!(acir_get_slow_low_memory(), false);
 
@@ -80,13 +103,13 @@ fn test_ultra_honk_keccak() {
 fn test_ultra_honk_low_memory() {
     let _ = tracing_subscriber::fmt::try_init();
 
-    // Read the JSON manifest of the circuit 
+    // Read the JSON manifest of the circuit
     let circuit_txt = std::fs::read_to_string("circuits/target/keccak_large.json").unwrap();
     // Parse the JSON manifest into a dictionary
     let circuit: serde_json::Value = serde_json::from_str(&circuit_txt).unwrap();
     // Get the bytecode from the dictionary
     let circuit_bytecode = circuit["bytecode"].as_str().unwrap();
-    
+
     // Setup SRS
     setup_srs_from_bytecode(circuit_bytecode, None, false).unwrap();
 
@@ -95,12 +118,15 @@ fn test_ultra_honk_low_memory() {
     // Get the witness map from the vector of field elements
     // The vector items can be either a FieldElement, an unsigned integer
     // For hex or decimal strings, use from_vec_str_to_witness_map
-    let initial_witness = witness::from_vec_to_witness_map(vec![2 as u128, 5 as u128, 10 as u128, 15 as u128, 20 as u128]).unwrap();
+    let initial_witness = witness::from_vec_to_witness_map(vec![
+        2 as u128, 5 as u128, 10 as u128, 15 as u128, 20 as u128,
+    ])
+    .unwrap();
 
     let start = std::time::Instant::now();
     let vk = get_ultra_honk_verification_key(circuit_bytecode, true).unwrap();
     assert_eq!(acir_get_slow_low_memory(), true);
-    
+
     let proof = prove_ultra_honk(circuit_bytecode, initial_witness, vk.clone(), true).unwrap();
     info!("ultra honk proof generation time: {:?}", start.elapsed());
     assert_eq!(acir_get_slow_low_memory(), true);
@@ -151,7 +177,7 @@ fn test_compute_subgroup_size() {
 
     subgroup_size = compute_subgroup_size(100000);
     assert_eq!(subgroup_size, 131072);
-    
+
     subgroup_size = compute_subgroup_size(200000);
     assert_eq!(subgroup_size, 262144);
 
@@ -159,12 +185,12 @@ fn test_compute_subgroup_size() {
     assert_eq!(subgroup_size, 524288);
 
     subgroup_size = compute_subgroup_size(1000000);
-    assert_eq!(subgroup_size, 1048576);    
+    assert_eq!(subgroup_size, 1048576);
 }
 
 /*#[test]
 fn test_ultra_honk_recursive_proving() {
-    // Read the JSON manifest of the circuit 
+    // Read the JSON manifest of the circuit
     let recursed_circuit_txt = std::fs::read_to_string("circuits/target/recursed.json").unwrap();
     // Parse the JSON manifest into a dictionary
     let recursed_circuit: serde_json::Value = serde_json::from_str(&recursed_circuit_txt).unwrap();
@@ -186,12 +212,12 @@ fn test_ultra_honk_recursive_proving() {
     //println!("proof: {:?}", proof_as_fields);
     //println!("vk: {:?}", vk_as_fields);
     //println!("key_hash: {:?}", key_hash);
-    
+
     assert_eq!(proof_as_fields.len(), 463);
     assert_eq!(vk_as_fields.len(), 128);
     //assert_eq!(key_hash, "0x25240793a378438025d0dbe8a4e197c93ec663864a5c9b01699199423dab1008");
 
-    // Read the JSON manifest of the circuit 
+    // Read the JSON manifest of the circuit
     let recursive_circuit_txt = std::fs::read_to_string("circuits/target/recursive.json").unwrap();
     // Parse the JSON manifest into a dictionary
     let recursive_circuit: serde_json::Value = serde_json::from_str(&recursive_circuit_txt).unwrap();

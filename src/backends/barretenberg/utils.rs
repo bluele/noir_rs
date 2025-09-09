@@ -9,11 +9,12 @@ pub fn compute_subgroup_size(circuit_size: u32) -> u32 {
 }
 
 pub fn get_circuit_size(circuit_bytecode: &str, recursion: bool) -> u32 {
-    let (_, acir_buffer_uncompressed) = if let Ok(acir_buffer_uncompressed) = decode_circuit(circuit_bytecode) {
-        acir_buffer_uncompressed
-    } else {
-        return 0;
-    };
+    let (_, acir_buffer_uncompressed) =
+        if let Ok(acir_buffer_uncompressed) = decode_circuit(circuit_bytecode) {
+            acir_buffer_uncompressed
+        } else {
+            return 0;
+        };
 
     let circuit_size = unsafe { get_circuit_sizes(&acir_buffer_uncompressed, recursion) };
     circuit_size.total

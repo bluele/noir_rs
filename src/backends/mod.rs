@@ -1,2 +1,2 @@
-#[cfg(feature = "barretenberg")]
+#[cfg(any(feature = "barretenberg", test))]
 pub mod barretenberg;

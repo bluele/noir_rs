@@ -27,6 +27,9 @@ serde_json = "1.0.125"
 bb_rs = { git = "https://github.com/zkpassport/aztec-packages.git", branch = "v1.0.0-nightly.20250723", optional = true }
 openssl = { version = "0.10", features = ["vendored"], optional = true }
 
+[dev-dependencies]
+bb_rs = { git = "https://github.com/zkpassport/aztec-packages.git", branch = "v1.0.0-nightly.20250723" }
+
 [features]
 default = []
 barretenberg = ["bb_rs"]

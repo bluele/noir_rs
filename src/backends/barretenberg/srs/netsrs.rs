@@ -1,4 +1,4 @@
-use reqwest::blocking::Client;
+use reqwest::Client;
 use reqwest::header::{HeaderMap, RANGE};
 use std::fs;
 use std::ops::Deref;
@@ -16,10 +16,10 @@ impl Deref for NetSrs {
 }
 
 impl NetSrs {
-    pub fn new(num_points: u32) -> Self {
+    pub async fn new(num_points: u32) -> Self {
         NetSrs(Srs {
             num_points,
-            g1_data: Self::download_g1_data(num_points),
+            g1_data: Self::download_g1_data(num_points).await,
             g2_data: G2.to_vec(),
         })
     }
@@ -41,7 +41,7 @@ impl NetSrs {
         cache_dir.join(filename)
     }
 
-    fn download_g1_data(num_points: u32) -> Vec<u8> {
+    async fn download_g1_data(num_points: u32) -> Vec<u8> {
         let g1_end: u32 = num_points * 64 - 1;
         let range_start = 0;
         let range_end = g1_end;
@@ -78,9 +78,10 @@ impl NetSrs {
             .timeout(std::time::Duration::from_secs(100000))
             .headers(headers)
             .send()
+            .await
             .unwrap();
 
-        let data = response.bytes().unwrap().to_vec();
+        let data = response.bytes().await.unwrap().to_vec();
 
         // Save to cache
         match fs::write(&cache_file_path, &data) {
@@ -98,12 +99,13 @@ impl NetSrs {
         data
     }
 
-    fn download_g2_data() -> Vec<u8> {
+    async fn download_g2_data() -> Vec<u8> {
         let response = Client::new()
             .get("https://crs.aztec.network/g2.dat")
             .send()
+            .await
             .unwrap();
 
-        response.bytes().unwrap().to_vec()
+        response.bytes().await.unwrap().to_vec()
     }
 }

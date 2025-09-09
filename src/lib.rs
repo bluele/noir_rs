@@ -6,5 +6,5 @@ pub mod witness;
 pub mod circuit; 
 mod backends;
 
-#[cfg(feature = "barretenberg")]
+#[cfg(any(feature = "barretenberg", test))]
 pub use backends::barretenberg;

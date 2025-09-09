@@ -35,7 +35,7 @@ impl Srs {
     }
 }
 
-pub fn get_srs(subgroup_size: u32, srs_path: Option<&str>) -> Srs {
+pub async fn get_srs(subgroup_size: u32, srs_path: Option<&str>) -> Srs {
     match srs_path {
         Some(path) => {
             if path.ends_with(".dat") {
@@ -49,27 +49,26 @@ pub fn get_srs(subgroup_size: u32, srs_path: Option<&str>) -> Srs {
             }
         }
         None => {
-            let net_srs = netsrs::NetSrs::new(subgroup_size + 1);
+            let net_srs = netsrs::NetSrs::new(subgroup_size + 1).await;
             net_srs.to_srs()
         }
     }
 }
 
-pub fn setup_srs(circuit_size: u32, srs_path: Option<&str>) -> Result<u32, String> {
+pub async fn setup_srs(circuit_size: u32, srs_path: Option<&str>) -> Result<u32, String> {
     let subgroup_size = compute_subgroup_size(circuit_size);
-    let srs = get_srs(subgroup_size, srs_path);
+    let srs = get_srs(subgroup_size, srs_path).await;
     unsafe {
         bb_rs::barretenberg_api::srs::init_srs(&srs.g1_data, srs.num_points, &srs.g2_data);
     }
     Ok(srs.num_points)
 }
 
-pub fn setup_srs_from_bytecode(
+pub async fn setup_srs_from_bytecode(
     circuit_bytecode: &str,
     srs_path: Option<&str>,
     recursive: bool,
 ) -> Result<u32, String> {
     let circuit_size = get_circuit_size(circuit_bytecode, recursive);
-    println!("circuit_size: {}", circuit_size);
-    setup_srs(circuit_size, srs_path)
+    setup_srs(circuit_size, srs_path).await
 }

@@ -1,2 +1,4 @@
 [env]
-RUST_LOG = "info"
+CC = "clang"
+CXX = "clang++"
+BB_BUILD_JOBS = "8"

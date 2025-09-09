@@ -29,8 +29,8 @@ impl NetSrs {
     }
 
     fn get_cache_dir() -> PathBuf {
-        let temp_dir = std::env::temp_dir();
-        let cache_dir = temp_dir.join("noir_rs_g1_cache");
+        let home_dir = std::env::var("HOME").expect("Could not find home directory");
+        let cache_dir = PathBuf::from(home_dir).join(".noir_rs").join("cache");
         fs::create_dir_all(&cache_dir).unwrap_or_else(|_| {});
         cache_dir
     }

@@ -70,6 +70,5 @@ pub fn setup_srs_from_bytecode(
     recursive: bool,
 ) -> Result<u32, String> {
     let circuit_size = get_circuit_size(circuit_bytecode, recursive);
-    println!("circuit_size: {}", circuit_size);
     setup_srs(circuit_size, srs_path)
 }

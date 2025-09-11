@@ -5,6 +5,7 @@ use std::fs;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::time::Duration;
+use tracing::debug;
 
 pub struct NetSrs(pub Srs);
 
@@ -50,14 +51,14 @@ impl NetSrs {
         let cache_file_path = Self::get_cache_file_path(range_start, range_end);
 
         if cache_file_path.exists() {
-            println!("Using cached g1.dat from {:?}", cache_file_path);
+            debug!("Using cached g1.dat from {:?}", cache_file_path);
             match fs::read(&cache_file_path) {
                 Ok(data) => {
-                    println!("Successfully loaded cached data");
+                    debug!("Successfully loaded cached data");
                     return data;
                 }
                 Err(e) => {
-                    println!("Failed to read cache file: {}. Downloading fresh data.", e);
+                    debug!("Failed to read cache file: {}. Downloading fresh data.", e);
                 }
             }
         }
@@ -70,8 +71,8 @@ impl NetSrs {
                 .parse()
                 .unwrap(),
         );
-        println!("Downloading g1.dat from https://crs.aztec.network/g1.dat");
-        println!("Headers: {:?}", headers);
+        debug!("Downloading g1.dat from https://crs.aztec.network/g1.dat");
+        debug!("Headers: {:?}", headers);
 
         let data = http_get_bytes_on_isolated_thread(
             "https://crs.aztec.network/g1.dat",
@@ -82,10 +83,10 @@ impl NetSrs {
         // Save to cache
         match fs::write(&cache_file_path, &data) {
             Ok(_) => {
-                println!("Cached downloaded data to {:?}", cache_file_path);
+                debug!("Cached downloaded data to {:?}", cache_file_path);
             }
             Err(e) => {
-                println!(
+                debug!(
                     "Failed to save cache file: {}. Continuing without caching.",
                     e
                 );

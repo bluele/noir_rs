@@ -1,53 +1,52 @@
-use bb_rs::barretenberg_api::acir::{
-    acir_verify_ultra_honk, acir_verify_ultra_keccak_honk, acir_verify_ultra_keccak_zk_honk, 
-    acir_get_ultra_honk_verification_key, acir_get_ultra_honk_keccak_verification_key, 
-    acir_get_ultra_honk_keccak_zk_verification_key, acir_set_slow_low_memory, acir_set_storage_budget
-};
 use crate::circuit::decode_circuit;
+use bb_rs::barretenberg_api::acir::{
+    acir_get_ultra_honk_keccak_verification_key, acir_get_ultra_honk_keccak_zk_verification_key,
+    acir_get_ultra_honk_verification_key, acir_set_slow_low_memory, acir_set_storage_budget,
+    acir_verify_ultra_honk, acir_verify_ultra_keccak_honk, acir_verify_ultra_keccak_zk_honk,
+};
 
-pub fn get_ultra_honk_verification_key(circuit_bytecode: &str, low_memory_mode: bool, max_storage_usage: Option<u64>) -> Result<Vec<u8>, String> {
-    let (_, acir_buffer_uncompressed) = decode_circuit(circuit_bytecode)
-        .map_err(|e| format!("Failed to decode circuit: {}", e))?;
+pub fn get_ultra_honk_verification_key(
+    circuit_bytecode: &str,
+    low_memory_mode: bool,
+    max_storage_usage: Option<u64>,
+) -> Result<Vec<u8>, String> {
+    let (_, acir_buffer_uncompressed) =
+        decode_circuit(circuit_bytecode).map_err(|e| format!("Failed to decode circuit: {}", e))?;
 
     acir_set_slow_low_memory(low_memory_mode);
     if let Some(max_storage_usage) = max_storage_usage {
         acir_set_storage_budget(max_storage_usage);
     }
 
-    let result = unsafe {
-        acir_get_ultra_honk_verification_key(&acir_buffer_uncompressed)
-    };
-    Ok(result)
+    acir_get_ultra_honk_verification_key(&acir_buffer_uncompressed)
 }
 
-pub fn verify_ultra_honk(
-    proof: Vec<u8>,
-    verification_key: Vec<u8>,
-) -> Result<bool, String> {
+pub fn verify_ultra_honk(proof: Vec<u8>, verification_key: Vec<u8>) -> Result<bool, String> {
     Ok(unsafe {
         let result = acir_verify_ultra_honk(&proof, &verification_key);
         result
     })
 }
 
-pub fn get_ultra_honk_keccak_verification_key(circuit_bytecode: &str, disable_zk: bool, low_memory_mode: bool, max_storage_usage: Option<u64>) -> Result<Vec<u8>, String> {
-    let (_, acir_buffer_uncompressed) = decode_circuit(circuit_bytecode)
-        .map_err(|e| format!("Failed to decode circuit: {}", e))?;
+pub fn get_ultra_honk_keccak_verification_key(
+    circuit_bytecode: &str,
+    disable_zk: bool,
+    low_memory_mode: bool,
+    max_storage_usage: Option<u64>,
+) -> Result<Vec<u8>, String> {
+    let (_, acir_buffer_uncompressed) =
+        decode_circuit(circuit_bytecode).map_err(|e| format!("Failed to decode circuit: {}", e))?;
 
     acir_set_slow_low_memory(low_memory_mode);
     if let Some(max_storage_usage) = max_storage_usage {
         acir_set_storage_budget(max_storage_usage);
     }
-    
-    let result = unsafe {
-        if disable_zk {
-            acir_get_ultra_honk_keccak_verification_key(&acir_buffer_uncompressed)
-        } else {
-            acir_get_ultra_honk_keccak_zk_verification_key(&acir_buffer_uncompressed)
-        }
-    };
 
-    Ok(result)
+    if disable_zk {
+        acir_get_ultra_honk_keccak_verification_key(&acir_buffer_uncompressed)
+    } else {
+        acir_get_ultra_honk_keccak_zk_verification_key(&acir_buffer_uncompressed)
+    }
 }
 
 pub fn verify_ultra_honk_keccak(

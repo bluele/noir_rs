@@ -35,22 +35,22 @@ impl Srs {
     }
 }
 
-pub fn get_srs(subgroup_size: u32, srs_path: Option<&str>) -> Srs {
+pub fn get_srs(subgroup_size: u32, srs_path: Option<&str>) -> Result<Srs, String> {
     match srs_path {
         Some(path) => {
             if path.ends_with(".dat") {
                 // Interpret as a .dat file
                 let local_srs = localsrs::LocalSrs::from_dat_file(subgroup_size + 1, srs_path);
-                local_srs.to_srs()
+                Ok(local_srs.to_srs())
             } else {
                 // Otherwise interpret as a .local file (i.e. a serialized SRS struct)
                 let local_srs = localsrs::LocalSrs::new(subgroup_size + 1, srs_path);
-                local_srs.to_srs()
+                Ok(local_srs.to_srs())
             }
         }
         None => {
-            let net_srs = netsrs::NetSrs::new(subgroup_size + 1);
-            net_srs.to_srs()
+            let net_srs = netsrs::NetSrs::new(subgroup_size + 1)?;
+            Ok(net_srs.to_srs())
         }
     }
 }
@@ -59,7 +59,7 @@ pub fn setup_srs(circuit_size: u32, srs_path: Option<&str>) -> Result<u32, Strin
     // UltraHonk proving in current bb versions requires at least 2^9 CRS points.
     // Smaller circuits can still trigger requests for 513 points internally.
     let subgroup_size = compute_subgroup_size(circuit_size).max(512);
-    let srs = get_srs(subgroup_size, srs_path);
+    let srs = get_srs(subgroup_size, srs_path)?;
     unsafe {
         bb_rs::barretenberg_api::srs::init_srs(&srs.g1_data, srs.num_points, &srs.g2_data);
     }
